@@ -1,0 +1,236 @@
+<section class="engagement-page" *ngIf="engagement as e">
+  <button type="button" class="back-btn" (click)="goBackToClient()">&#8592; Back to {{ e.clientName }}</button>
+
+  <div class="title-row">
+    <div class="title-main">
+      <h2>{{ e.name }}</h2>
+      <div class="title-badges">
+        <span class="badge type">{{ e.type | titlecase }}</span>
+        <span class="badge status" [class.ok]="e.status === 'On Track'" [class.risk]="e.status === 'At Risk'" [class.overdue]="e.status === 'Overdue'">
+          <span class="dot"></span>
+          {{ e.status }}
+        </span>
+      </div>
+    </div>
+
+    <div class="title-actions">
+      <button type="button" class="ghost-btn">View History</button>
+      <button type="button" class="ghost-btn">Edit</button>
+    </div>
+  </div>
+
+  <section class="summary-card">
+    <div class="summary-item">
+      <p>Client Name</p>
+      <strong>{{ e.clientName }}</strong>
+    </div>
+    <div class="summary-item">
+      <p>Period</p>
+      <strong>{{ e.period || '-' }}</strong>
+    </div>
+    <div class="summary-item">
+      <p>Primary Contact</p>
+      <strong>{{ e.primaryContact || '-' }}</strong>
+    </div>
+    <div class="summary-item">
+      <p>Target Date</p>
+      <strong>{{ e.targetDate }}</strong>
+    </div>
+    <div class="summary-item">
+      <p>Required Date</p>
+      <strong>{{ e.requiredDate }}</strong>
+    </div>
+  </section>
+
+  <section class="stages-block">
+    <div class="stages-header">
+      <h3>Engagement Stages</h3>
+      <div class="actions">
+        <label class="search-box">
+          <span class="search-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="6"></circle>
+              <path d="M20 20l-4.2-4.2"></path>
+            </svg>
+          </span>
+          <input type="text" placeholder="Search" [(ngModel)]="searchTerm" />
+        </label>
+        <button type="button" class="ghost-btn small">Filters</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Stage Name</th>
+            <th>Status</th>
+            <th>Target Start</th>
+            <th>Target End</th>
+            <th>Last Updated</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let stage of filteredStages">
+            <tr class="stage-row-clickable" (click)="toggleStageExpand(stage)">
+              <td>{{ stage.name }}</td>
+              <td>
+                <span class="status-pill" [ngClass]="stageStatusClass(stage.status)">
+                  <span class="dot"></span>
+                  {{ stage.status }}
+                </span>
+              </td>
+              <td>{{ stage.targetStart }}</td>
+              <td>{{ stage.targetEnd }}</td>
+              <td>{{ stage.lastUpdated | date: 'yyyy-MM-dd' }}</td>
+              <td class="row-actions">
+                <button type="button" class="icon-btn" (click)="$event.stopPropagation(); openStageEditor(stage)" aria-label="Comment">
+                  <svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"></path></svg>
+                </button>
+                <button type="button" class="icon-btn" (click)="$event.stopPropagation(); openStageEditor(stage)" aria-label="Edit">
+                  <svg viewBox="0 0 24 24"><path d="M4 20h4l10-10-4-4L4 16z"></path><path d="M12 6l4 4"></path></svg>
+                </button>
+                <button type="button" class="icon-btn" (click)="$event.stopPropagation(); toggleStageExpand(stage)" aria-label="Toggle">
+                  <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"></path></svg>
+                </button>
+              </td>
+            </tr>
+
+            <tr *ngIf="isStageExpanded(stage.id)">
+              <td colspan="6" class="expanded-cell">
+                <section class="tasks-section">
+                  <h4>Steps for {{ stage.name }}</h4>
+                  <table class="steps-table">
+                    <thead>
+                      <tr>
+                        <th>Step Name</th>
+                        <th>Status</th>
+                        <th>Target Start</th>
+                        <th>Target End</th>
+                        <th>Actual Start</th>
+                        <th>Actual End</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let step of stage.steps">
+                        <td>{{ step.name }}</td>
+                        <td>
+                          <span class="status-pill" [ngClass]="stepStatusClass(step.status)">
+                            <span class="dot"></span>
+                            {{ step.status }}
+                          </span>
+                        </td>
+                        <td>{{ step.targetStart }}</td>
+                        <td>{{ step.targetEnd }}</td>
+                        <td>{{ step.actualStart || '-' }}</td>
+                        <td>{{ step.actualEnd || '-' }}</td>
+                        <td class="row-actions">
+                          <button type="button" class="icon-btn" (click)="openStepEditor(stage, step)" aria-label="Comment">
+                            <svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"></path></svg>
+                          </button>
+                          <button type="button" class="icon-btn" (click)="openStepEditor(stage, step)" aria-label="Edit">
+                            <svg viewBox="0 0 24 24"><path d="M4 20h4l10-10-4-4L4 16z"></path><path d="M12 6l4 4"></path></svg>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </section>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+
+<div class="drawer-backdrop" *ngIf="editorOpen" (click)="closeEditor()">
+  <aside class="editor-drawer" (click)="$event.stopPropagation()">
+    <header class="drawer-header">
+      <h3>{{ editorTitle }}</h3>
+      <button type="button" class="close-btn" [disabled]="editorSaving" (click)="closeEditor()">&times;</button>
+    </header>
+
+    <div class="drawer-body">
+      <div class="editor-row">
+        <h4>{{ editorForm.name }}</h4>
+        <div class="editor-controls">
+          <select [(ngModel)]="editorForm.status">
+            <option>Not Started</option>
+            <option>In Progress</option>
+            <option>Completed</option>
+            <option>On Hold</option>
+            <option>At Risk</option>
+            <option>Overdue</option>
+          </select>
+          <label class="switch">
+            <input type="checkbox" [(ngModel)]="editorForm.enabled" />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="date-grid" *ngIf="editorKind === 'stage'">
+        <label>
+          <span>Target Start</span>
+          <input type="date" [(ngModel)]="editorForm.targetStart" />
+        </label>
+        <label>
+          <span>Target End</span>
+          <input type="date" [(ngModel)]="editorForm.targetEnd" />
+        </label>
+      </div>
+
+      <div class="date-grid" *ngIf="editorKind === 'step'">
+        <label>
+          <span>Target Start</span>
+          <input type="date" [(ngModel)]="editorForm.targetStart" />
+        </label>
+        <label>
+          <span>Target End</span>
+          <input type="date" [(ngModel)]="editorForm.targetEnd" />
+        </label>
+        <label>
+          <span>Actual Start</span>
+          <input type="date" [(ngModel)]="editorForm.actualStart" />
+        </label>
+        <label>
+          <span>Actual End</span>
+          <input type="date" [(ngModel)]="editorForm.actualEnd" />
+        </label>
+      </div>
+
+      <section class="comments-block">
+        <h5>Comments</h5>
+        <div class="comment-input-row">
+          <input type="text" [(ngModel)]="editorForm.comment" placeholder="Add a comment" />
+          <button type="button" class="send-btn" [disabled]="editorSaving" (click)="saveEditor()">&#94;</button>
+        </div>
+
+        <div class="comment-list">
+          <article class="comment-item" *ngFor="let item of editorComments">
+            <div class="comment-head">
+              <strong>{{ item.author }}</strong>
+              <span>{{ item.when }}</span>
+            </div>
+            <p class="comment-title">{{ item.title }}</p>
+            <p class="comment-message">{{ item.message }}</p>
+          </article>
+        </div>
+      </section>
+
+      <p class="error-text" *ngIf="editorError">{{ editorError }}</p>
+    </div>
+
+    <footer class="drawer-actions">
+      <button type="button" class="ghost-btn" [disabled]="editorSaving" (click)="closeEditor()">Cancel</button>
+      <button type="button" class="primary-btn" [disabled]="editorSaving" (click)="saveEditor()">
+        <span class="btn-spinner" *ngIf="editorSaving" aria-hidden="true"></span>
+        {{ editorSaving ? 'Saving...' : 'Save' }}
+      </button>
+    </footer>
+  </aside>
+</div>

@@ -1,0 +1,292 @@
+<section class="user-page" *ngIf="selectedUser; else nonDetailTemplate">
+  <header class="detail-header-top">
+    <button type="button" class="back-link" (click)="backToUserList()">&larr; Back to User Management</button>
+    <div class="header-actions">
+      <button type="button" class="primary-btn" (click)="triggerDataRefresh()">+ Add Engagement</button>
+      <button type="button" class="secondary-btn">Edit</button>
+    </div>
+  </header>
+
+  <div class="detail-title-wrap">
+    <h1>{{ selectedUser.name }}</h1>
+  </div>
+
+  <section class="detail-profile-card">
+    <div class="profile-avatar">
+      <img *ngIf="selectedUser.avatar" [src]="selectedUser.avatar" alt="User avatar" />
+      <span *ngIf="!selectedUser.avatar">{{ initials(selectedUser.name) }}</span>
+    </div>
+
+    <div class="profile-meta">
+      <div class="meta-block">
+        <span>Email Address</span>
+        <strong>{{ selectedUser.email }}</strong>
+      </div>
+      <div class="meta-block">
+        <span>Role</span>
+        <strong>{{ selectedUser.role }}</strong>
+      </div>
+      <div class="meta-block">
+        <span>Domain Access</span>
+        <div class="chip-row">
+          <span class="chip" *ngFor="let token of domainTokens(selectedUser)">{{ token }}</span>
+        </div>
+      </div>
+      <div class="meta-block">
+        <span>Status</span>
+        <span class="status" [class.inactive]="statusFor(selectedUser) === 'Inactive'">
+          <span class="dot"></span>{{ statusFor(selectedUser) }}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <section class="activity-card">
+    <div class="activity-title">Activity &amp; History</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Performed by</th>
+            <th>Date &amp; Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of selectedUserHistory">
+            <td>{{ item.status }}</td>
+            <td>{{ item.performedBy }}</td>
+            <td class="history-date">{{ item.changedAt }}</td>
+          </tr>
+          <tr *ngIf="selectedUserHistory.length === 0">
+            <td colspan="3" class="empty-state">No recent activity</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+
+<ng-template #nonDetailTemplate>
+  <section class="user-page" *ngIf="!showAddUserForm; else addUserTemplate">
+    <header class="user-header">
+      <div class="title-block">
+        <h1>User Management</h1>
+        <div class="module-toggle" role="tablist" aria-label="Domain module switch">
+          <button type="button" [class.active]="selectedModule === 'audit'" (click)="setModule('audit')">Audit</button>
+          <button type="button" [class.active]="selectedModule === 'tax'" (click)="setModule('tax')">Tax</button>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="primary-btn" (click)="triggerDataRefresh()">+ Add Engagement</button>
+        <button type="button" class="primary-btn" (click)="openAddUserForm()">+ Add User</button>
+      </div>
+    </header>
+
+    <section class="filters-bar">
+      <div class="left-controls">
+        <label class="select-wrap">
+          <select [(ngModel)]="roleFilter" (ngModelChange)="onFiltersChanged()">
+            <option *ngFor="let role of roleFilterOptions" [ngValue]="role">
+              {{ role === 'all' ? 'All Roles' : role }}
+            </option>
+          </select>
+        </label>
+      </div>
+
+      <label class="search-wrap" aria-label="Search users">
+        <span>Search</span>
+        <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="onFiltersChanged()" placeholder="Search" />
+      </label>
+    </section>
+
+    <p class="error-text" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+    <section class="table-card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="checkbox-col">
+                <input
+                  type="checkbox"
+                  [checked]="isAllOnPageSelected"
+                  (click)="$event.stopPropagation()"
+                  (change)="toggleSelectAll(($any($event.target)).checked)"
+                />
+              </th>
+              <th>User</th>
+              <th>Role</th>
+              <th>Domain Access</th>
+              <th>Status</th>
+              <th>Last Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of pagedUsers" class="clickable-row" (click)="openUserDetail(user)">
+              <td class="checkbox-col">
+                <input
+                  type="checkbox"
+                  [checked]="selectedIds.has(user.id)"
+                  (click)="$event.stopPropagation()"
+                  (change)="toggleSelection(user.id, ($any($event.target)).checked)"
+                />
+              </td>
+              <td>
+                <div class="user-cell">
+                  <span class="avatar" *ngIf="!user.avatar">{{ initials(user.name) }}</span>
+                  <img class="avatar avatar-img" *ngIf="user.avatar" [src]="user.avatar" alt="User avatar" />
+                  <div class="user-copy">
+                    <div class="name">{{ user.name }}</div>
+                    <div class="email">{{ user.email }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>{{ user.role }}</td>
+              <td>
+                <div class="chip-row">
+                  <span class="chip" *ngFor="let token of domainTokens(user)">{{ token }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="status" [class.inactive]="statusFor(user) === 'Inactive'">
+                  <span class="dot"></span>{{ statusFor(user) }}
+                </span>
+              </td>
+              <td>{{ lastUpdatedFor(user) }}</td>
+            </tr>
+            <tr *ngIf="pagedUsers.length === 0">
+              <td colspan="6" class="empty-state">No users found for the selected filters.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="table-footer">
+        <div class="pager-buttons">
+          <button type="button" (click)="previousPage()" [disabled]="currentPage <= 1">Previous</button>
+          <button type="button" (click)="nextPage()" [disabled]="currentPage >= totalPages">Next</button>
+        </div>
+        <div class="page-meta">Page {{ currentPage }} of {{ totalPages }}</div>
+      </footer>
+    </section>
+  </section>
+</ng-template>
+
+<ng-template #addUserTemplate>
+  <section class="add-user-page">
+    <header class="add-header">
+      <button type="button" class="add-title" (click)="closeAddUserForm()">
+        <span class="back-icon">&#8592;</span>
+        <span>Add User</span>
+      </button>
+      <div class="header-actions">
+        <button type="button" class="secondary-btn add-action-btn" (click)="closeAddUserForm()" [disabled]="savingNewUser">Cancel</button>
+        <button type="button" class="primary-btn add-action-btn add-submit-btn" (click)="saveUser()" [disabled]="savingNewUser">
+          <span class="save-icon">&#128190;</span>
+          <span class="btn-spinner" *ngIf="savingNewUser" aria-hidden="true"></span>
+          {{ savingNewUser ? 'Saving...' : 'Add' }}
+        </button>
+      </div>
+    </header>
+
+    <p class="error-text" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+    <div class="form-shell">
+      <section class="form-card">
+        <h2>Basic info</h2>
+        <div class="grid two-col">
+          <label>
+            First name
+            <input type="text" [(ngModel)]="addUserForm.firstName" placeholder="e.g. Luna" />
+          </label>
+          <label>
+            Last name
+            <input type="text" [(ngModel)]="addUserForm.lastName" placeholder="e.g. Shane" />
+          </label>
+        </div>
+
+        <label>
+          Email
+          <input type="email" [(ngModel)]="addUserForm.email" placeholder="luna@sbc.com" />
+        </label>
+
+        <div class="upload-row">
+          <div class="avatar-lg">
+            <img *ngIf="addUserAvatarPreview" [src]="addUserAvatarPreview" alt="Selected avatar" />
+            <span *ngIf="!addUserAvatarPreview">&#128100;</span>
+          </div>
+
+          <input
+            #imageFileInput
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml"
+            class="hidden-file-input"
+            (change)="selectAvatarFile($event)"
+          />
+
+          <button
+            type="button"
+            class="upload-dropzone"
+            (click)="imageFileInput.click()"
+            (dragover)="onDragOverAvatar($event)"
+            (drop)="onDropAvatar($event)"
+          >
+            <div class="upload-copy">Click to upload <span>or drag and drop</span></div>
+            <small>SVG, PNG, JPG or GIF (max. 800x400px)</small>
+            <small *ngIf="addUserAvatarName" class="file-name">{{ addUserAvatarName }}</small>
+          </button>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <h2>System info</h2>
+
+        <label>
+          Role
+          <select [(ngModel)]="addUserForm.role">
+            <option *ngFor="let role of roleOptions" [ngValue]="role">{{ role }}</option>
+          </select>
+        </label>
+
+        <small class="hint-text">Domain access is automatically assigned based on role</small>
+
+        <div class="domain-block">
+          <div class="label">Domain Access</div>
+          <div class="chip-row">
+            <button
+              type="button"
+              class="chip-btn"
+              [class.active]="isDomainSelected('audit')"
+              (click)="toggleDomainSelection('audit')"
+            >
+              Audit
+            </button>
+            <button
+              type="button"
+              class="chip-btn"
+              [class.active]="isDomainSelected('tax')"
+              (click)="toggleDomainSelection('tax')"
+            >
+              Tax
+            </button>
+          </div>
+        </div>
+
+        <label>
+          Status
+          <select [(ngModel)]="addUserForm.status">
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </label>
+      </section>
+    </div>
+  </section>
+</ng-template>
+
+<div class="success-toast" *ngIf="successToast">
+  <div class="icon">&#10003;</div>
+  <div class="copy">{{ successToast }}</div>
+</div>

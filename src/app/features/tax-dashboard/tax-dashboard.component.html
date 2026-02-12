@@ -1,0 +1,115 @@
+<app-header/>
+<!DOCTYPE html>
+<html lang="en">
+    <div class="toggle">
+      <button (click)="Ontoogle()" >Audit</button>
+      <button class="active">Tax</button>
+    </div>
+<head>
+  <meta charset="UTF-8" />
+  <title>Tax Engagement Dashboard</title>
+</head>
+<body>
+
+<div class="dashboard">
+
+  <h2 class="title">Tax Engagement Dashboard</h2>
+
+  <!-- TOP SUMMARY CARDS -->
+  <div class="metrics">
+    <div class="card">
+      <h3>287</h3>
+      <p>Total Tax Engagements</p>
+    </div>
+    <div class="card green">
+      <h3>201</h3>
+      <p>On Track</p>
+    </div>
+    <div class="card yellow">
+      <h3>63</h3>
+      <p>At Risk</p>
+    </div>
+    <div class="card red">
+      <h3>23</h3>
+      <p>Overdue</p>
+    </div>
+  </div>
+
+  <!-- PIPELINE BY STAGE -->
+  <h3 class="section-title">Tax Pipeline by Stage</h3>
+
+  <div class="stage-grid">
+    <div class="stage-card">
+      <span>Data Collection</span>
+      <strong>92</strong>
+    </div>
+    <div class="stage-card">
+      <span>Computation</span>
+      <strong>71</strong>
+    </div>
+    <div class="stage-card">
+      <span>Review</span>
+      <strong>58</strong>
+    </div>
+    <div class="stage-card">
+      <span>Filing</span>
+      <strong>43</strong>
+    </div>
+    <div class="stage-card">
+      <span>Submitted</span>
+      <strong>23</strong>
+    </div>
+  </div>
+
+  <!-- ENGAGEMENT LIST -->
+  <h3 class="section-title">Tax Engagement List</h3>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Tax Year</th>
+          <th>Current Stage</th>
+          <th>Target Issue Date</th>
+          <th>Required Issue Date</th>
+          <th>Status</th>
+          <th>Owner</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ABC Pvt Ltd</td>
+          <td>FY 2024</td>
+          <td>Review</td>
+          <td>2024-09-15</td>
+          <td>2024-09-30</td>
+          <td><span class="status at-risk">At Risk</span></td>
+          <td>Ramesh</td>
+        </tr>
+        <tr>
+          <td>XYZ Industries</td>
+          <td>FY 2024</td>
+          <td>Filing</td>
+          <td>2024-09-10</td>
+          <td>2024-09-15</td>
+          <td><span class="status on-track">On Track</span></td>
+          <td>Suresh</td>
+        </tr>
+        <tr>
+          <td>LMN Corp</td>
+          <td>FY 2024</td>
+          <td>Computation</td>
+          <td>2024-09-01</td>
+          <td>2024-09-15</td>
+          <td><span class="status delayed">Overdue</span></td>
+          <td>Anita</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+</body>
+</html>

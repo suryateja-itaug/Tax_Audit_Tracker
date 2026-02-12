@@ -1,0 +1,49 @@
+<section class="login-shell">
+  <div class="brand-icon">SBC</div>
+  <h1>Sign in to your account</h1>
+  <p class="subtitle">Welcome back to Audit Tax Tracking system</p>
+
+  <form class="login-card" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+    <label class="field">
+      <span>Email address</span>
+      <div class="input-wrap">
+        <span class="icon" aria-hidden="true">✉</span>
+        <input type="text" formControlName="username" placeholder="name@company.com" />
+      </div>
+    </label>
+
+    <label class="field">
+      <span>Password</span>
+      <div class="input-wrap">
+        <span class="icon" aria-hidden="true">🔒</span>
+        <input type="password" formControlName="password" placeholder="••••••••" />
+      </div>
+    </label>
+
+    <div class="row">
+      <label class="remember">
+        <input type="checkbox" />
+        <span>Remember me</span>
+      </label>
+      <a href="#" (click)="$event.preventDefault()">Forgot your password?</a>
+    </div>
+
+    <button type="submit" class="signin-btn" [disabled]="loginForm.invalid">
+      <span>Sign in</span>
+      <span aria-hidden="true">→</span>
+    </button>
+
+    <div class="divider">
+      <span>Demo Account Credentials</span>
+    </div>
+
+    <div class="demo-card">
+      <span aria-hidden="true">✓</span>
+      <p>Email: <strong>demo@sbc.com</strong></p>
+    </div>
+    <div class="demo-card">
+      <span aria-hidden="true">✓</span>
+      <p>Password: <strong>password</strong></p>
+    </div>
+  </form>
+</section>

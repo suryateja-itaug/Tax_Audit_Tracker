@@ -1,0 +1,284 @@
+<section class="client-detail" *ngIf="client; else noClientTpl">
+  <ng-container *ngIf="!isEditMode; else editModeTpl">
+    <button type="button" class="back-btn" (click)="goBack()">&#8592; Back to Clients</button>
+    <div class="header-row">
+      <h2>{{ client.name }}</h2>
+      <div class="header-actions">
+        <button type="button" class="ghost-action" (click)="openHistoryDrawer()">View History</button>
+        <button type="button" class="ghost-action" (click)="openEditClientMode()">Edit</button>
+      </div>
+    </div>
+
+    <section class="summary-card">
+      <div class="summary-item">
+        <p>Industry</p>
+        <strong>{{ client.industry || '-' }}</strong>
+      </div>
+      <div class="summary-item">
+        <p>Engagement Manager</p>
+        <strong>{{ client.engagementManager || '-' }}</strong>
+      </div>
+      <div class="summary-item">
+        <p>Total Engagements</p>
+        <strong>{{ client.engagementCount }}</strong>
+      </div>
+      <div class="summary-item">
+        <p>Client Email</p>
+        <strong>{{ client.email || '-' }}</strong>
+      </div>
+    </section>
+
+    <section class="engagements-block">
+      <div class="engagements-header">
+        <h3>Engagements</h3>
+        <div class="engagements-actions">
+          <button type="button" class="ghost-action">Select dates</button>
+          <button type="button" class="ghost-action">Filters</button>
+          <button type="button" class="add-engagement-btn" (click)="openAddEngagementModal()">
+            + Add Engagement
+          </button>
+        </div>
+      </div>
+
+      <div class="cards-grid">
+        <article class="eng-card" *ngFor="let engagement of client.engagements" (click)="openEngagement(engagement.id)">
+          <div class="card-top">
+            <strong>{{ engagement.name }}</strong>
+            <span
+              class="status"
+              [class.ok]="engagement.status === 'On Track'"
+              [class.risk]="engagement.status === 'At Risk'"
+              [class.overdue]="engagement.status === 'Overdue'"
+            >
+              {{ engagement.status }}
+            </span>
+          </div>
+          <span class="badge">{{ engagement.type | titlecase }}</span>
+          <div class="meta-grid">
+            <div>
+              <p>Target Date</p>
+              <strong>{{ engagement.targetDate || '-' }}</strong>
+            </div>
+            <div>
+              <p>Required Date</p>
+              <strong>{{ engagement.requiredDate || '-' }}</strong>
+            </div>
+          </div>
+          <div class="stage-row">
+            <strong>{{ engagement.currentStage }}</strong>
+            <div class="progress-track" [class.risk]="engagement.status !== 'On Track'">
+              <div
+                class="progress-fill"
+                [class.risk]="engagement.status !== 'On Track'"
+                [style.width.%]="getEngagementProgress(engagement)"
+              ></div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </ng-container>
+
+  <ng-template #editModeTpl>
+    <section class="edit-client-page">
+      <button type="button" class="back-btn" (click)="cancelEditClientMode()">&#8592; Back to {{ client.name }}</button>
+      <h2 class="edit-title">Edit Client</h2>
+
+      <p class="error-text" *ngIf="addEngagementError">{{ addEngagementError }}</p>
+
+      <div class="edit-grid-row">
+        <div class="edit-left-label">
+          <strong>Client Details</strong>
+          <span>some supporting text</span>
+        </div>
+
+        <div class="edit-card">
+          <div class="edit-fields two-col">
+            <label>
+              <span>Client Name</span>
+              <input type="text" [(ngModel)]="editClientForm.name" />
+            </label>
+            <label>
+              <span>Client Email ID</span>
+              <input type="email" [(ngModel)]="editClientForm.email" />
+            </label>
+            <label class="full">
+              <span>Industry</span>
+              <select [(ngModel)]="editClientForm.industry">
+                <option *ngFor="let option of industryOptions" [ngValue]="option">{{ option }}</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="edit-grid-row">
+        <div class="edit-left-label">
+          <strong>Engagement Details</strong>
+          <span>Add engagements for this client, you can even add it later</span>
+        </div>
+
+        <div class="edit-card">
+          <div class="engagement-edit-block" *ngFor="let item of editEngagements; let i = index">
+            <div class="edit-fields two-col">
+              <label class="full">
+                <span>Engagement Name</span>
+                <input type="text" [(ngModel)]="item.name" />
+              </label>
+
+              <label>
+                <span>Engagement Type</span>
+                <select [(ngModel)]="item.type">
+                  <option value="audit">Audit</option>
+                  <option value="tax">Tax</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Engagement Year / Period</span>
+                <input type="text" [(ngModel)]="item.period" />
+              </label>
+
+              <label>
+                <span>Required Issue Date</span>
+                <input type="date" [(ngModel)]="item.requiredDate" />
+              </label>
+
+              <label>
+                <span>Target Issue Date</span>
+                <input type="date" [(ngModel)]="item.targetDate" />
+              </label>
+
+              <label>
+                <span>Engagement Partner</span>
+                <select [(ngModel)]="item.partnerId">
+                  <option *ngFor="let user of managersForType(item.type)" [ngValue]="user.id">{{ user.name }}</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Engagement Manager</span>
+                <select [(ngModel)]="item.managerId">
+                  <option *ngFor="let user of managersForType(item.type)" [ngValue]="user.id">{{ user.name }}</option>
+                </select>
+              </label>
+            </div>
+            <hr *ngIf="i < editEngagements.length - 1" />
+          </div>
+
+          <button type="button" class="add-another-btn" (click)="addAnotherEngagementRow()">+ Add another Engagement</button>
+        </div>
+      </div>
+
+      <div class="edit-footer-actions">
+        <button type="button" class="btn ghost" [disabled]="savingClientEdit" (click)="cancelEditClientMode()">Cancel</button>
+        <button type="button" class="btn primary" [disabled]="savingClientEdit" (click)="saveEditedClient()">
+          <span class="btn-spinner" *ngIf="savingClientEdit" aria-hidden="true"></span>
+          {{ savingClientEdit ? 'Saving...' : 'Add' }}
+        </button>
+      </div>
+    </section>
+  </ng-template>
+
+  <div class="modal-backdrop" *ngIf="showAddEngagementModal" (click)="closeAddEngagementModal()">
+    <div class="engagement-modal" (click)="$event.stopPropagation()">
+      <div class="modal-title-row">
+        <h3>Add Engagement</h3>
+      </div>
+
+      <p class="error-text" *ngIf="addEngagementError">{{ addEngagementError }}</p>
+
+      <div class="modal-body">
+        <label class="field full">
+          <span>Client</span>
+          <input type="text" [value]="client.name" disabled />
+        </label>
+
+        <label class="field full">
+          <span>Engagement Name</span>
+          <input type="text" [(ngModel)]="engagementForm.name" placeholder="FY2025 Audit" />
+        </label>
+
+        <label class="field">
+          <span>Engagement Type</span>
+          <select [(ngModel)]="engagementForm.type" (ngModelChange)="onTypeChange($event)">
+            <option value="audit">Audit</option>
+            <option value="tax">Tax</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Engagement Year / Period</span>
+          <input type="text" [(ngModel)]="engagementForm.period" placeholder="FY 2025" />
+        </label>
+
+        <label class="field">
+          <span>Required Issue Date</span>
+          <input type="date" [(ngModel)]="engagementForm.requiredDate" />
+        </label>
+
+        <label class="field">
+          <span>Target Issue Date</span>
+          <input type="date" [(ngModel)]="engagementForm.targetDate" />
+        </label>
+
+        <label class="field full">
+          <span>Engagement Manager</span>
+          <select [(ngModel)]="engagementForm.managerId">
+            <option *ngFor="let user of managersForType(engagementForm.type)" [ngValue]="user.id">
+              {{ user.name }}
+            </option>
+          </select>
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" [disabled]="addEngagementSaving" (click)="closeAddEngagementModal()">
+          Cancel
+        </button>
+        <button type="button" class="btn primary" [disabled]="addEngagementSaving" (click)="saveEngagement()">
+          <span class="btn-spinner" *ngIf="addEngagementSaving" aria-hidden="true"></span>
+          {{ addEngagementSaving ? 'Saving...' : 'Add' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="history-drawer-backdrop" *ngIf="showHistoryDrawer" (click)="closeHistoryDrawer()">
+    <aside class="history-drawer" (click)="$event.stopPropagation()">
+      <header class="drawer-header">
+        <h3>Activity &amp; History</h3>
+        <button type="button" class="drawer-close" (click)="closeHistoryDrawer()">&#10005;</button>
+      </header>
+
+      <div class="drawer-tabs">
+        <button type="button" [class.active]="historyTab === 'client'" (click)="setHistoryTab('client')">Client</button>
+        <button type="button" [class.active]="historyTab === 'engagements'" (click)="setHistoryTab('engagements')">Engagements</button>
+      </div>
+
+      <div class="drawer-list" *ngIf="!historyLoading; else historyLoadingTpl">
+        <article class="history-item" *ngFor="let item of activeHistoryItems">
+          <div class="history-icon">&#128717;</div>
+          <div class="history-content">
+            <strong>{{ item.title }}</strong>
+            <p>{{ item.details }}</p>
+            <p class="performed">Performed by : {{ item.performedBy }}</p>
+          </div>
+          <time>{{ item.changedAt | date: 'yyyy-MM-dd HH:mm' }}</time>
+        </article>
+        <p class="history-empty" *ngIf="activeHistoryItems.length === 0">No history available.</p>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<ng-template #noClientTpl>
+  <section class="empty-state">
+    <p *ngIf="loading">Loading client details...</p>
+    <p *ngIf="!loading">Client details not found.</p>
+  </section>
+</ng-template>
+
+<ng-template #historyLoadingTpl>
+  <div class="history-empty">Loading history...</div>
+</ng-template>

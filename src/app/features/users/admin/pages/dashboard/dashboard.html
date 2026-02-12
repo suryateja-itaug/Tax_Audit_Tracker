@@ -1,0 +1,139 @@
+<div
+  class="dashboard-grid"
+  [class.audit-layout]="activeModule === 'audit'"
+  [class.tax-layout]="activeModule === 'tax'"
+>
+  <section class="card overview-card">
+    <div class="card-header">
+      <h3>Overall Engagement Overview</h3>
+      <button type="button" class="menu-btn" aria-label="More options">...</button>
+    </div>
+
+    <div class="overview-content">
+      <div
+        class="donut"
+        [class.animate]="donutAnimating"
+        [style.background]="donutBackgroundValue"
+        (click)="onStatusClick('On Track')"
+      >
+        <div class="donut-center">
+          <span class="donut-label">Total</span>
+          <strong>{{ totalEngagements }}</strong>
+        </div>
+      </div>
+
+      <ul class="legend">
+        <li (click)="onStatusClick('On Track')">
+          <span class="dot on-track"></span>On Track ({{ stats.onTrack }})
+        </li>
+        <li (click)="onStatusClick('At Risk')">
+          <span class="dot at-risk"></span>At Risk ({{ stats.atRisk }})
+        </li>
+        <li (click)="onStatusClick('Overdue')">
+          <span class="dot overdue"></span>Overdue ({{ stats.overdue }})
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="card stage-card">
+    <div class="card-header">
+      <h3>Engagements by Stage ({{ activeModule | titlecase }})</h3>
+      <button type="button" class="menu-btn" aria-label="More options">...</button>
+    </div>
+
+    <div class="stage-list">
+      <div class="stage-row" *ngFor="let stage of stages" (click)="onStageClick(stage.name)">
+        <span class="stage-name">{{ stage.name }}</span>
+        <div class="stage-bar">
+          <div class="stage-fill" [style.width.%]="getStagePercent(stage.name)"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card upcoming-card">
+    <div class="card-header">
+      <h3>Upcoming &amp; Overdue Engagements</h3>
+      <button type="button" class="ghost-btn" (click)="viewAllUpcoming()">View All</button>
+    </div>
+
+    <div class="upcoming-list">
+      <div
+        class="engagement-item"
+        [class.overdue-item]="item.isOverdue"
+        *ngFor="let item of upcomingItems"
+        (click)="onUpcomingClick(item.id)"
+      >
+        <div class="row-top">
+          <div>
+            <p class="client" [class.overdue-text]="item.isOverdue">{{ item.client }}</p>
+            <p class="engagement">{{ item.engagement }}</p>
+          </div>
+          <p class="due" [class.overdue-text]="item.isOverdue">{{ item.dueText }}</p>
+        </div>
+
+        <div class="line-bar">
+          <div
+            class="line-fill"
+            [class.overdue-fill]="item.isOverdue"
+            [style.width.%]="getUpcomingPercent(item.id)"
+          ></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card summary-card">
+    <div class="card-header">
+      <h3>Engagement Summary</h3>
+      <div class="summary-actions">
+        <button type="button" class="ghost-btn" (click)="viewAllUpcoming()">View All</button>
+        <label class="table-search">
+          <span aria-hidden="true">⌕</span>
+          <input type="text" placeholder="Search" [(ngModel)]="summarySearch" />
+        </label>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Engagement</th>
+            <th>Stage</th>
+            <th>Status</th>
+            <th>Engagement Manager</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of filteredSummaryRows" (click)="onSummaryClick(row.id)">
+            <td>
+              <button
+                type="button"
+                class="client-link"
+                (click)="$event.stopPropagation(); onSummaryClientClick(row.clientId)"
+              >
+                {{ row.client }}
+              </button>
+            </td>
+            <td>{{ row.engagement }}</td>
+            <td>{{ row.stage }}</td>
+            <td>
+              <span
+                class="status"
+                [class.ok]="row.status === 'On Track'"
+                [class.risk]="row.status === 'At Risk'"
+                [class.overdue]="row.status === 'Overdue'"
+              >
+                {{ row.status }}
+              </span>
+            </td>
+            <td>{{ row.manager }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

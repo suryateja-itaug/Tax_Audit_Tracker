@@ -1,0 +1,106 @@
+<section class="engagements-page">
+  <div class="top-row">
+    <div class="status-tabs">
+      <button [disabled]="loading" [class.active]="statusFilter === 'All'" (click)="setStatus('All')">All</button>
+      <button [disabled]="loading" [class.active]="statusFilter === 'Overdue'" (click)="setStatus('Overdue')">Overdue</button>
+      <button [disabled]="loading" [class.active]="statusFilter === 'At Risk'" (click)="setStatus('At Risk')">At Risk</button>
+      <button [disabled]="loading" [class.active]="statusFilter === 'On Track'" (click)="setStatus('On Track')">On Track</button>
+    </div>
+
+    <div class="top-actions">
+      <button type="button" class="filter-btn" [disabled]="loading" (click)="clearFilters()">Filters</button>
+      <label class="search-box">
+        <span class="search-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="6"></circle>
+            <path d="M20 20l-4.2-4.2"></path>
+          </svg>
+        </span>
+        <input [disabled]="loading" [(ngModel)]="searchTerm" (keyup.enter)="applySearch()" type="text" placeholder="Search" />
+      </label>
+    </div>
+  </div>
+
+  <div class="table-card" [class.is-loading]="loading">
+    <div class="table-loading-overlay" *ngIf="loading">
+      <div class="table-spinner" aria-label="Loading"></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="checkbox-col phase1-hidden">
+              <input
+                type="checkbox"
+                [disabled]="loading"
+                [checked]="isAllOnPageSelected"
+                (change)="toggleSelectAll(($any($event.target)).checked)"
+              />
+            </th>
+            <th>Engagement &#8595;</th>
+            <th>Client Name</th>
+            <th>Current Stage</th>
+            <th>Target End Date</th>
+            <th>Status</th>
+            <th>Manager</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let item of pagedEngagements" (click)="onRowClick(item.id)">
+            <td class="checkbox-col phase1-hidden" (click)="$event.stopPropagation()">
+              <input
+                type="checkbox"
+                [disabled]="loading"
+                [checked]="selectedIds.has(item.id)"
+                (change)="toggleSelection(item.id, ($any($event.target)).checked)"
+              />
+            </td>
+
+            <td class="eng-cell">
+              <button type="button" class="eng-link" (click)="$event.stopPropagation(); openDetail(item.id)">{{ item.name }}</button>
+              <span class="eng-type">{{ item.type | titlecase }}</span>
+            </td>
+
+            <td>
+              <button type="button" class="client-link" (click)="openClientDetail(item.clientId, $event)">{{ item.clientName }}</button>
+            </td>
+
+            <td>
+              <div class="stage-name">{{ item.currentStage }}</div>
+              <div class="stage-track">
+                <div class="stage-fill" [ngClass]="getProgressClass(item)" [style.width.%]="getProgressPercent(item)"></div>
+              </div>
+            </td>
+
+            <td>
+              <div class="target-date">{{ item.targetDate }}</div>
+              <div class="due-text">{{ getDueText(item.targetDate) }}</div>
+            </td>
+
+            <td>
+              <span
+                class="status"
+                [class.ok]="item.status === 'On Track'"
+                [class.risk]="item.status === 'At Risk'"
+                [class.overdue]="item.status === 'Overdue'"
+              >
+                {{ item.status }}
+              </span>
+            </td>
+
+            <td>{{ item.managerName }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-footer">
+      <div class="pagination-actions">
+        <button type="button" (click)="previousPage()" [disabled]="loading || currentPage === 1">Previous</button>
+        <button type="button" (click)="nextPage()" [disabled]="loading || currentPage === totalPages">Next</button>
+      </div>
+      <div class="page-text">{{ showingSummary }}</div>
+    </div>
+  </div>
+</section>

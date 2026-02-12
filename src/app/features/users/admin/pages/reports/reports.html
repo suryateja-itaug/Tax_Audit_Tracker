@@ -1,0 +1,41 @@
+﻿<section class="report-grid">
+  <article class="report-kpi">
+    <p class="label">Generated This Week</p>
+    <strong>24</strong>
+  </article>
+  <article class="report-kpi">
+    <p class="label">Scheduled Reports</p>
+    <strong>9</strong>
+  </article>
+  <article class="report-kpi">
+    <p class="label">Pending Review</p>
+    <strong>5</strong>
+  </article>
+</section>
+
+<section class="page-card">
+  <div class="toolbar">
+    <h3>Recent Reports</h3>
+    <button type="button" class="ghost-btn">Create Report</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Report Name</th>
+          <th>Module</th>
+          <th>Generated On</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let report of reports">
+          <td>{{ report.name }}</td>
+          <td>{{ report.module }}</td>
+          <td>{{ report.generatedOn | date: 'medium' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+

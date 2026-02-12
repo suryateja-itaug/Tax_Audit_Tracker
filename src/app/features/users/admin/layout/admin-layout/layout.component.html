@@ -1,0 +1,24 @@
+<div class="admin-container">
+  <div class="mobile-topbar" *ngIf="isMobileView">
+    <button type="button" class="menu-toggle" (click)="toggleSidebar()" aria-label="Toggle sidebar">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <strong>Navigation</strong>
+  </div>
+
+  <div class="sidebar-overlay" *ngIf="isMobileView && isSidebarOpen" (click)="closeSidebar()"></div>
+
+  <app-sidebar
+    [class.mobile-open]="isSidebarOpen"
+    (mobileNavigate)="closeSidebar()"
+  />
+
+  <div class="main-content">
+    <app-header (moduleChange)="onModuleChange($event)"> </app-header>
+    <div class="page-wrapper">
+      <router-outlet ></router-outlet>
+    </div>
+  </div>
+</div>

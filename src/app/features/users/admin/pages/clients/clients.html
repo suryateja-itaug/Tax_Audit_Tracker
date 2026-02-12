@@ -1,0 +1,91 @@
+<section class="clients-page">
+  <div class="filters-row">
+    <label class="select-field">
+      <select [(ngModel)]="industryFilter" (ngModelChange)="onFiltersChanged()">
+        <option value="all">All Industries</option>
+        <option *ngFor="let industry of industryOptions.slice(1)" [value]="industry">{{ industry }}</option>
+      </select>
+    </label>
+
+    <label class="select-field">
+      <select [(ngModel)]="contactFilter" (ngModelChange)="onFiltersChanged()">
+        <option value="all">All Contacts</option>
+        <option *ngFor="let contact of contactOptions.slice(1)" [value]="contact">{{ contact }}</option>
+      </select>
+    </label>
+
+    <label class="search-box">
+      <span class="search-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="6"></circle>
+          <path d="M20 20l-4.2-4.2"></path>
+        </svg>
+      </span>
+      <input type="text" placeholder="Search" [(ngModel)]="searchTerm" (ngModelChange)="onFiltersChanged()" />
+    </label>
+  </div>
+
+  <div class="table-card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="checkbox-col">
+              <input
+                type="checkbox"
+                [checked]="isAllOnPageSelected"
+                (change)="toggleSelectAll(($any($event.target)).checked)"
+              />
+            </th>
+            <th>Client &#8595;</th>
+            <th>Industry</th>
+            <th>Engagements</th>
+            <th>Status Summary</th>
+            <th>Engagement Manager</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let client of pagedClients">
+            <td>
+              <input
+                type="checkbox"
+                [checked]="selectedClientIds.has(client.id)"
+                (change)="toggleSelection(client.id, ($any($event.target)).checked)"
+              />
+            </td>
+            <td class="client-cell">
+              <button type="button" class="client-link" (click)="openClientDetail(client.id)">
+                {{ client.name }}
+              </button>
+              <div class="client-email">{{ client.email }}</div>
+            </td>
+            <td>{{ client.industry }}</td>
+            <td>{{ client.engagementCount }}</td>
+            <td>
+              <div class="status-pills">
+                <span class="pill on-track" *ngIf="client.statusSummary.onTrack > 0">
+                  {{ client.statusSummary.onTrack }} On Track
+                </span>
+                <span class="pill at-risk" *ngIf="client.statusSummary.atRisk > 0">
+                  {{ client.statusSummary.atRisk }} At Risk
+                </span>
+                <span class="pill overdue" *ngIf="client.statusSummary.overdue > 0">
+                  {{ client.statusSummary.overdue }} Overdue
+                </span>
+              </div>
+            </td>
+            <td>{{ client.engagementManager }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-footer">
+      <div class="pagination-actions">
+        <button type="button" (click)="previousPage()" [disabled]="currentPage === 1">Previous</button>
+        <button type="button" (click)="nextPage()" [disabled]="currentPage === totalPages">Next</button>
+      </div>
+      <div class="page-text">Page {{ currentPage }} of {{ totalPages }}</div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,241 @@
+<div class="header-container" *ngIf="showHeaderBar">
+  <div class="left-section">
+    <h2 class="page-title">{{ pageTitle }}</h2>
+
+    <div class="module-toggle" *ngIf="showModuleToggle">
+      <button [class.active]="activeModule === 'audit'" (click)="switchModule('audit')">
+        Audit
+      </button>
+      <button [class.active]="activeModule === 'tax'" (click)="switchModule('tax')">
+        Tax
+      </button>
+    </div>
+  </div>
+
+  <div class="right-section">
+    <button *ngIf="showAddClientButton" class="btn primary" (click)="openAddClientModal()">
+      <span class="plus">+</span> Add Client
+    </button>
+    <button *ngIf="showAddEngagementButton" class="btn primary" (click)="openAddEngagementModal()">
+      <span class="plus">+</span> Add Engagement
+    </button>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="showAddClientModal" (click)="closeAddClientModal()">
+  <div class="engagement-modal client-modal form-page" (click)="$event.stopPropagation()">
+    <button type="button" class="page-back" (click)="closeAddClientModal()">&#8592; Back to Dashboard</button>
+    <div class="page-title-wrap">
+      <h3>Add Client</h3>
+    </div>
+
+    <p class="error-text" *ngIf="addClientError">{{ addClientError }}</p>
+
+    <section class="split-section">
+      <div class="section-left">
+        <h4>Client Details</h4>
+        <p>Enter the basic information about the client.</p>
+      </div>
+
+      <div class="section-card">
+        <div class="form-grid two-col">
+          <label class="field">
+            <span>Client Name</span>
+            <input type="text" [(ngModel)]="clientForm.name" placeholder="e.g. Acme Corporation" />
+          </label>
+
+          <label class="field">
+            <span>Client Email ID</span>
+            <input type="email" [(ngModel)]="clientForm.email" placeholder="accounts@acmecorp.com" />
+          </label>
+
+          <label class="field full">
+            <span>Industry</span>
+            <select [(ngModel)]="clientForm.industry">
+              <option *ngFor="let industry of industryOptions" [ngValue]="industry">{{ industry }}</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <hr class="section-divider" />
+
+    <section class="split-section">
+      <div class="section-left">
+        <h4>Engagement Details</h4>
+        <p>Add engagements for this client, you can even add it later</p>
+      </div>
+
+      <div class="section-card">
+        <div class="form-grid two-col">
+          <label class="field full">
+            <span>Engagement Name</span>
+            <input type="text" [(ngModel)]="clientEngagementDraft.name" placeholder="e.g. FY2025 Audit" />
+          </label>
+
+          <label class="field">
+            <span>Engagement Type</span>
+            <select [(ngModel)]="clientEngagementDraft.type">
+              <option value="audit">Audit</option>
+              <option value="tax">Tax</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Engagement Year / Period</span>
+            <select [(ngModel)]="clientEngagementDraft.period">
+              <option *ngFor="let period of periodOptions" [ngValue]="period">{{ period }}</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Required Issue Date</span>
+            <input type="date" [(ngModel)]="clientEngagementDraft.requiredDate" />
+          </label>
+
+          <label class="field">
+            <span>Target Issue Date</span>
+            <input type="date" [(ngModel)]="clientEngagementDraft.targetDate" />
+          </label>
+
+          <label class="field">
+            <span>Engagement Partner</span>
+            <select [(ngModel)]="clientEngagementDraft.partnerId">
+              <option value="">Select Partner</option>
+              <option *ngFor="let user of users" [ngValue]="user.id">{{ user.name }}</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Engagement Manager</span>
+            <select [(ngModel)]="clientEngagementDraft.managerId">
+              <option value="">Select Manager</option>
+              <option *ngFor="let user of users" [ngValue]="user.id">{{ user.name }}</option>
+            </select>
+          </label>
+        </div>
+
+        <button type="button" class="add-inline-link">&#43; Add another Engagement</button>
+      </div>
+    </section>
+
+    <div class="modal-actions page-actions">
+      <button type="button" class="btn ghost" [disabled]="addClientSaving" (click)="closeAddClientModal()">
+        Cancel
+      </button>
+      <button type="button" class="btn primary" [disabled]="addClientSaving" (click)="saveClient()">
+        <span class="btn-spinner" *ngIf="addClientSaving" aria-hidden="true"></span>
+        {{ addClientSaving ? 'Saving...' : 'Add' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="showAddEngagementModal" (click)="closeAddEngagementModal()">
+  <div class="engagement-modal form-page" (click)="$event.stopPropagation()">
+    <button type="button" class="page-back" (click)="closeAddEngagementModal()">
+      &#8592; Back to Dashboard
+    </button>
+    <div class="page-title-wrap">
+      <h3>Add Engagement</h3>
+    </div>
+
+    <p class="error-text" *ngIf="addEngagementError">{{ addEngagementError }}</p>
+
+    <ng-container *ngIf="!addEngagementLoading; else loadingTpl">
+      <section class="split-section">
+        <div class="section-left">
+          <h4>Select Client</h4>
+          <p>Choose the client you need to create the engagement for</p>
+        </div>
+
+        <div class="section-card">
+          <div class="form-grid">
+            <label class="field full">
+              <span>Client Name</span>
+              <select [(ngModel)]="engagementForm.clientId">
+                <option *ngFor="let client of clients" [ngValue]="client.id">{{ client.name }}</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <hr class="section-divider" />
+
+      <section class="split-section">
+        <div class="section-left">
+          <h4>Engagement Details</h4>
+          <p>Add engagements for this client, you can even add it later</p>
+        </div>
+
+        <div class="section-card">
+          <div class="form-grid two-col">
+            <label class="field full">
+              <span>Engagement Name</span>
+              <input type="text" [(ngModel)]="engagementForm.name" placeholder="FY2025 Audit" />
+            </label>
+
+            <label class="field">
+              <span>Engagement Type</span>
+              <select [(ngModel)]="engagementForm.type" (ngModelChange)="onTypeChange($event)">
+                <option value="audit">Audit</option>
+                <option value="tax">Tax</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Engagement Year / Period</span>
+              <input type="text" [(ngModel)]="engagementForm.period" placeholder="FY 2025" />
+            </label>
+
+            <label class="field">
+              <span>Required Issue Date</span>
+              <input type="date" [(ngModel)]="engagementForm.requiredDate" />
+            </label>
+
+            <label class="field">
+              <span>Target Issue Date</span>
+              <input type="date" [(ngModel)]="engagementForm.targetDate" />
+            </label>
+
+            <label class="field">
+              <span>Engagement Partner</span>
+              <select [(ngModel)]="engagementForm.managerId">
+                <option *ngFor="let user of managersForType(engagementForm.type)" [ngValue]="user.id">
+                  {{ user.name }}
+                </option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Engagement Manager</span>
+              <select [(ngModel)]="engagementForm.managerId">
+                <option *ngFor="let user of managersForType(engagementForm.type)" [ngValue]="user.id">
+                  {{ user.name }}
+                </option>
+              </select>
+            </label>
+          </div>
+
+          <button type="button" class="add-inline-link">&#43; Add another Engagement</button>
+        </div>
+      </section>
+    </ng-container>
+
+    <ng-template #loadingTpl>
+      <div class="loading-text">Loading clients and managers...</div>
+    </ng-template>
+
+    <div class="modal-actions page-actions">
+      <button type="button" class="btn ghost" [disabled]="addEngagementSaving" (click)="closeAddEngagementModal()">
+        Cancel
+      </button>
+      <button type="button" class="btn primary" [disabled]="addEngagementSaving" (click)="saveEngagement()">
+        <span class="btn-spinner" *ngIf="addEngagementSaving" aria-hidden="true"></span>
+        {{ addEngagementSaving ? 'Saving...' : 'Add' }}
+      </button>
+    </div>
+  </div>
+</div>

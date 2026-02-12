@@ -1,0 +1,19 @@
+<section class="components-shell">
+  <h2>Users (Mock Service)</h2>
+
+  <div *ngIf="loading" class="loading">
+    <span class="spinner" aria-hidden="true"></span>
+    <span>Loading users...</span>
+  </div>
+
+  <p *ngIf="!loading && error" class="error">{{ error }}</p>
+
+  <p *ngIf="!loading && !error && users.length === 0" class="empty">No users found.</p>
+
+  <ul *ngIf="!loading && !error && users.length > 0" class="user-list">
+    <li *ngFor="let user of users">
+      <strong>{{ user.name }}</strong>
+      <span>{{ user.email }}</span>
+    </li>
+  </ul>
+</section>
