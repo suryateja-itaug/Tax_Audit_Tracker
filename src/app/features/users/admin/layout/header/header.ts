@@ -325,7 +325,7 @@ export class Header implements OnInit, OnDestroy {
       this.pageTitle = 'Engagement Detail';
       this.showModuleToggle = false;
       this.showAddClientButton = false;
-      this.showAddEngagementButton = true;
+      this.showAddEngagementButton = false;
       return;
     }
 
@@ -335,6 +335,7 @@ export class Header implements OnInit, OnDestroy {
       engagements: 'Engagements',
       reports: 'Reports',
       users: 'User Management',
+      'stage-statistics': 'Stage Statistics',
     };
 
     const segment = url.split('/').filter(Boolean).at(-1) ?? 'dashboard';
@@ -354,5 +355,11 @@ export class Header implements OnInit, OnDestroy {
       this.allowedModules.length > 1;
     this.showAddClientButton = segment === 'dashboard' || segment === 'clients';
     this.showAddEngagementButton = segment === 'dashboard' || segment === 'engagements';
+
+    if (segment === 'stage-statistics') {
+      this.showModuleToggle = false;
+      this.showAddClientButton = false;
+      this.showAddEngagementButton = false;
+    }
   }
 }

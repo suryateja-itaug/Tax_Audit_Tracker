@@ -1,0 +1,74 @@
+<section class="stage-page">
+  <button type="button" class="back-btn" (click)="backToDashboard()">&larr; Back to Dashboard</button>
+
+  <div class="title-row">
+    <h2>{{ stageName || 'Stage' }} Statistics</h2>
+    <button type="button" class="ghost-btn" (click)="openStageEngagements()" [disabled]="!stageName">View Stage Engagements</button>
+  </div>
+
+  <section class="card" *ngIf="loading">
+    <p class="muted">Loading stage statistics...</p>
+  </section>
+
+  <ng-container *ngIf="!loading">
+    <section class="card" *ngIf="insight as data; else emptyTpl">
+      <div class="kpi-grid">
+        <article class="kpi-item">
+          <span>Total in Stage</span>
+          <strong>{{ data.total }}</strong>
+        </article>
+        <article class="kpi-item">
+          <span>Module Share</span>
+          <strong>{{ data.sharePercent }}%</strong>
+        </article>
+        <article class="kpi-item">
+          <span>Avg Progress</span>
+          <strong>{{ data.avgProgress }}%</strong>
+        </article>
+        <article class="kpi-item">
+          <span>Avg Days to Target</span>
+          <strong>{{ data.avgDaysToTarget }}</strong>
+        </article>
+      </div>
+
+      <div class="graph-grid">
+        <article class="graph-card">
+          <h3>Engagement Status Mix</h3>
+          <div class="stacked-track">
+            <div
+              *ngFor="let segment of data.statusSegments"
+              class="stack-segment"
+              [class]="segment.cssClass"
+              [style.width.%]="segment.percent"
+            ></div>
+          </div>
+          <div class="legend-list">
+            <p *ngFor="let segment of data.statusSegments">
+              <span class="legend-dot" [class]="segment.cssClass"></span>
+              {{ segment.label }} ({{ segment.count }}) - {{ segment.percent }}%
+            </p>
+          </div>
+        </article>
+
+        <article class="graph-card">
+          <h3>Step Execution Breakdown</h3>
+          <div class="mini-bars">
+            <div class="mini-bar-col" *ngFor="let segment of data.stepSegments">
+              <div class="mini-bar-track">
+                <div class="mini-bar-fill" [class]="segment.cssClass" [style.height.%]="segment.percent"></div>
+              </div>
+              <span class="mini-bar-label">{{ segment.label }}</span>
+              <span class="mini-bar-value">{{ segment.percent }}%</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </ng-container>
+</section>
+
+<ng-template #emptyTpl>
+  <section class="card">
+    <p class="muted">No statistics available for this stage.</p>
+  </section>
+</ng-template>

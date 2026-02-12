@@ -516,7 +516,7 @@ app.get('/api/dashboard', (req, res) => {
     return {
       name: stage.name,
       count,
-      percent: count === 0 ? 8 : Math.round((count / maxCount) * 100),
+      percent: count === 0 ? 0 : Math.round((count / maxCount) * 100),
     };
   });
 

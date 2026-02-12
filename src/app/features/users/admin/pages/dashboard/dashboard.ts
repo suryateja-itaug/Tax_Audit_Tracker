@@ -1,9 +1,25 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription, catchError, interval, of } from 'rxjs';
+import { Subscription, catchError, forkJoin, interval, of } from 'rxjs';
 import { AdminService } from '../../admin-services/admin-services';
 import { AdminApiService } from '../../data/admin-api.service';
-import { DashboardResponse, ModuleType } from '../../data/admin.models';
+import { DashboardResponse, EngagementModel, ModuleType } from '../../data/admin.models';
+
+interface StageInsight {
+  name: string;
+  total: number;
+  sharePercent: number;
+  avgProgress: number;
+  avgDaysToTarget: number;
+  status: {
+    onTrack: number;
+    atRisk: number;
+    overdue: number;
+  };
+  statusSegments: Array<{ label: string; count: number; percent: number; cssClass: string }>;
+  stepSegments: Array<{ label: string; count: number; percent: number; cssClass: string }>;
+  topManagers: Array<{ name: string; count: number }>;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -29,8 +45,11 @@ export class Dashboard implements OnInit, OnDestroy {
   private stageBarPercents: Record<string, number> = {};
   private upcomingBarPercents: Record<string, number> = {};
   private animationTimers: ReturnType<typeof setTimeout>[] = [];
+  private stageInsightsMap = new Map<string, StageInsight>();
+  private allEngagements: EngagementModel[] = [];
   donutBackgroundValue = 'conic-gradient(#dbe3f1 0 100%)';
   donutAnimating = false;
+  hoveredStageName = '';
 
   constructor(
     private adminService: AdminService,
@@ -112,6 +131,13 @@ export class Dashboard implements OnInit, OnDestroy {
     return this.stageBarPercents[stageName] ?? 0;
   }
 
+  get hoveredStageInsight(): StageInsight | null {
+    if (!this.hoveredStageName) {
+      return null;
+    }
+    return this.stageInsightsMap.get(this.hoveredStageName) ?? null;
+  }
+
   getUpcomingPercent(itemId: string): number {
     return this.upcomingBarPercents[itemId] ?? 0;
   }
@@ -151,9 +177,17 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   onStageClick(stageName: string): void {
-    this.router.navigate(['/admin/engagements'], {
+    this.router.navigate(['/admin/stage-statistics'], {
       queryParams: { module: this.activeModule, stage: stageName },
     });
+  }
+
+  onStageHover(stageName: string): void {
+    this.hoveredStageName = stageName;
+  }
+
+  onStageHoverEnd(): void {
+    this.hoveredStageName = '';
   }
 
   onUpcomingClick(engagementId: string): void {
@@ -179,30 +213,192 @@ export class Dashboard implements OnInit, OnDestroy {
     const moduleAtRequestTime = this.activeModule;
     this.loading = true;
     this.subscriptions.add(
-      this.adminApi
-        .getDashboard(moduleAtRequestTime)
-        .pipe(
-          catchError(() => {
-            return of({
+      forkJoin({
+        dashboard: this.adminApi.getDashboard(moduleAtRequestTime).pipe(
+          catchError(() =>
+            of({
               module: moduleAtRequestTime,
               stats: { total: 0, onTrack: 0, atRisk: 0, overdue: 0 },
               stages: [],
               upcoming: [],
               summary: [],
-            } as DashboardResponse);
-          }),
-        )
-        .subscribe((data) => {
+            } as DashboardResponse),
+          ),
+        ),
+        engagementsResponse: this.adminApi
+          .getEngagements({
+            module: moduleAtRequestTime,
+          })
+          .pipe(
+            catchError(() =>
+              of({
+                total: 0,
+                statusCounts: { All: 0, Overdue: 0, 'At Risk': 0, 'On Track': 0 },
+                items: [] as EngagementModel[],
+              }),
+            ),
+          ),
+      }).subscribe(({ dashboard, engagementsResponse }) => {
           const isStale =
             requestVersion !== this.dashboardRequestVersion || moduleAtRequestTime !== this.activeModule;
           if (isStale) {
             return;
           }
-          this.dashboard = data;
+          this.dashboard = dashboard;
+          this.allEngagements = engagementsResponse.items;
+          this.buildStageInsights();
           this.runBarAnimations();
           this.loading = false;
         }),
     );
+  }
+
+  private buildStageInsights(): void {
+    const now = new Date();
+    this.stageInsightsMap = new Map<string, StageInsight>();
+
+    this.dashboard.stages.forEach((stage) => {
+      const items = this.allEngagements.filter((engagement) => engagement.currentStage === stage.name);
+      const total = items.length;
+      const status = {
+        onTrack: items.filter((engagement) => engagement.status === 'On Track').length,
+        atRisk: items.filter((engagement) => engagement.status === 'At Risk').length,
+        overdue: items.filter((engagement) => engagement.status === 'Overdue').length,
+      };
+
+      const avgProgress =
+        total === 0
+          ? 0
+          : Math.round(
+              items.reduce((sum, engagement) => sum + this.getEngagementProgress(engagement), 0) / total,
+            );
+
+      const avgDaysToTarget =
+        total === 0
+          ? 0
+          : Math.round(
+              items.reduce((sum, engagement) => sum + this.daysToTarget(engagement.targetDate, now), 0) / total,
+            );
+
+      const stepStatusCounts = {
+        completed: 0,
+        inProgress: 0,
+        notStarted: 0,
+        blocked: 0,
+      };
+
+      items.forEach((engagement) => {
+        const stageDetail = engagement.stages?.find((entry) => entry.name === stage.name);
+        stageDetail?.steps?.forEach((step) => {
+          const stepStatus = step.status.toLowerCase();
+          if (stepStatus.includes('completed')) {
+            stepStatusCounts.completed += 1;
+          } else if (stepStatus.includes('progress')) {
+            stepStatusCounts.inProgress += 1;
+          } else if (stepStatus.includes('hold') || stepStatus.includes('risk') || stepStatus.includes('overdue')) {
+            stepStatusCounts.blocked += 1;
+          } else {
+            stepStatusCounts.notStarted += 1;
+          }
+        });
+      });
+
+      const totalSteps =
+        stepStatusCounts.completed +
+        stepStatusCounts.inProgress +
+        stepStatusCounts.notStarted +
+        stepStatusCounts.blocked;
+
+      const managerCounts = new Map<string, number>();
+      items.forEach((engagement) => {
+        const key = engagement.managerName || 'Unassigned';
+        managerCounts.set(key, (managerCounts.get(key) || 0) + 1);
+      });
+
+      const topManagers = Array.from(managerCounts.entries())
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3);
+
+      const insight: StageInsight = {
+        name: stage.name,
+        total,
+        sharePercent: this.totalEngagements === 0 ? 0 : Math.round((total / this.totalEngagements) * 100),
+        avgProgress,
+        avgDaysToTarget,
+        status,
+        statusSegments: [
+          {
+            label: 'On Track',
+            count: status.onTrack,
+            percent: total === 0 ? 0 : Math.round((status.onTrack / total) * 100),
+            cssClass: 'on-track',
+          },
+          {
+            label: 'At Risk',
+            count: status.atRisk,
+            percent: total === 0 ? 0 : Math.round((status.atRisk / total) * 100),
+            cssClass: 'at-risk',
+          },
+          {
+            label: 'Overdue',
+            count: status.overdue,
+            percent: total === 0 ? 0 : Math.round((status.overdue / total) * 100),
+            cssClass: 'overdue',
+          },
+        ],
+        stepSegments: [
+          {
+            label: 'Completed',
+            count: stepStatusCounts.completed,
+            percent: totalSteps === 0 ? 0 : Math.round((stepStatusCounts.completed / totalSteps) * 100),
+            cssClass: 'step-completed',
+          },
+          {
+            label: 'In Progress',
+            count: stepStatusCounts.inProgress,
+            percent: totalSteps === 0 ? 0 : Math.round((stepStatusCounts.inProgress / totalSteps) * 100),
+            cssClass: 'step-progress',
+          },
+          {
+            label: 'Not Started',
+            count: stepStatusCounts.notStarted,
+            percent: totalSteps === 0 ? 0 : Math.round((stepStatusCounts.notStarted / totalSteps) * 100),
+            cssClass: 'step-not-started',
+          },
+          {
+            label: 'Blocked',
+            count: stepStatusCounts.blocked,
+            percent: totalSteps === 0 ? 0 : Math.round((stepStatusCounts.blocked / totalSteps) * 100),
+            cssClass: 'step-blocked',
+          },
+        ],
+        topManagers,
+      };
+
+      this.stageInsightsMap.set(stage.name, insight);
+    });
+  }
+
+  private getEngagementProgress(engagement: EngagementModel): number {
+    const totalStages = engagement.stages?.length || 0;
+    if (!totalStages) {
+      return 0;
+    }
+    const stageIndex = engagement.stages.findIndex((stage) => stage.name === engagement.currentStage);
+    if (stageIndex < 0) {
+      return 0;
+    }
+    return Math.round(((stageIndex + 1) / totalStages) * 100);
+  }
+
+  private daysToTarget(targetDate: string, now: Date): number {
+    const target = new Date(targetDate);
+    if (Number.isNaN(target.getTime())) {
+      return 0;
+    }
+    const dayMs = 1000 * 60 * 60 * 24;
+    return Math.ceil((target.getTime() - now.getTime()) / dayMs);
   }
 
   private runBarAnimations(): void {

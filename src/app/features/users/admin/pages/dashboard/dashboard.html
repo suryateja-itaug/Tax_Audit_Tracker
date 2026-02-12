@@ -43,10 +43,26 @@
     </div>
 
     <div class="stage-list">
-      <div class="stage-row" *ngFor="let stage of stages" (click)="onStageClick(stage.name)">
+      <div
+        class="stage-row"
+        *ngFor="let stage of stages"
+        (mouseenter)="onStageHover(stage.name)"
+        (mouseleave)="onStageHoverEnd()"
+        (click)="onStageClick(stage.name)"
+      >
         <span class="stage-name">{{ stage.name }}</span>
         <div class="stage-bar">
           <div class="stage-fill" [style.width.%]="getStagePercent(stage.name)"></div>
+        </div>
+        <div class="stage-hover-card" *ngIf="hoveredStageName === stage.name && hoveredStageInsight as hoverInsight">
+          <p class="hover-title">{{ hoverInsight.name }}</p>
+          <p class="hover-meta">
+            {{ hoverInsight.total }} engagements &bull; {{ hoverInsight.sharePercent }}% of {{ activeModule | titlecase }}
+          </p>
+          <p class="hover-status">
+            On Track {{ hoverInsight.status.onTrack }} &bull; At Risk {{ hoverInsight.status.atRisk }} &bull; Overdue
+            {{ hoverInsight.status.overdue }}
+          </p>
         </div>
       </div>
     </div>
@@ -90,7 +106,7 @@
       <div class="summary-actions">
         <button type="button" class="ghost-btn" (click)="viewAllUpcoming()">View All</button>
         <label class="table-search">
-          <span aria-hidden="true">⌕</span>
+          <span aria-hidden="true">&#8981;</span>
           <input type="text" placeholder="Search" [(ngModel)]="summarySearch" />
         </label>
       </div>

@@ -17,6 +17,7 @@ import { Reports } from './pages/reports/reports';
 import { Pages } from './pages/pages';
 import { EngagementDetail } from './pages/engagement-detail/engagement-detail';
 import { ClientDetail } from './pages/client-detail/client-detail';
+import { StageStatisticsPage } from './pages/stage-statistics/stage-statistics';
 
 @NgModule({
   declarations: [
@@ -33,6 +34,7 @@ import { ClientDetail } from './pages/client-detail/client-detail';
     Pages,
     EngagementDetail,
     ClientDetail,
+    StageStatisticsPage,
   ],
   imports: [CommonModule, FormsModule, RouterModule.forChild(adminRoutes)],
   providers: [ AdminService],
